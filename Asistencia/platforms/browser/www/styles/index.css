@@ -1,0 +1,164 @@
+.white{
+    color:white;
+}
+
+.inline{
+    display: inline;
+}
+
+.mb10{
+    margin-bottom: 10px;
+}
+
+.red{
+    margin-top: 5px;
+    margin-left: 5px;
+    background-color: rgba(255,0,0,0.7);
+}
+
+.green{
+    margin-top: 5px;
+    margin-left: 5px;
+    background-color: rgba(0,255,0,0.7);
+}
+
+.blue{
+    margin-top: 5px;
+    margin-left: 5px;
+    background-color: rgba(40, 49, 138, 1);
+}
+
+.orange{
+    margin-top: 5px;
+    margin-left: 5px;
+    background-color: rgba(255, 128, 0,0.7);
+}
+
+.activo:hover{
+    margin-top: 5px;
+    margin-left: 5px;
+    background-color: rgba(255,0,0,1);
+}
+
+.inactivo:hover{
+    margin-top: 5px;
+    margin-left: 5px;
+    background-color: rgba(0,255,0,1);
+}
+
+.navbar{
+    background-color: #04B4AE;
+    border-color: #04B4AE;
+    border-radius: 0px;
+    color: white;
+}
+
+.tabinp{
+    margin-top: -20px;
+}
+
+.full{
+    width: 100%;
+}
+
+th{
+    vertical-align: middle;
+    text-align: center;
+}
+
+.r{
+    text-align: right;
+    vertical-align: middle;
+}
+
+.modal-header{
+    background-color: #04B4AE;
+    color: white;
+    border-color: #04B4AE;
+}
+
+.center{
+    text-align: center;
+}
+
+.modal-content{
+    border-color: #04B4AE;   
+}
+
+.btn-default:hover{
+    border-color: #04B4AE;
+    background-color: #04B4AE;
+    color: white;
+    box-shadow: 0px 0px 20px #04B4AE;
+}
+
+.green{
+    background-color: #99FF00;
+}
+
+.btn-success{
+    background-color: #0000FF;
+    color: white;
+}
+
+.btn-success:hover{
+    background-color: #0404B4;
+    color: white;
+}
+
+.btn-block{
+    padding-top: 20px;
+    padding-bottom: 20px;
+    background-color: #04B4AE;
+    border-style: none;
+}
+
+.btn-block:hover{
+    box-shadow: 0px 0px 20px #2E2EFE;
+    background-color: #2E2EFE;
+    margin-top: 10px;
+}
+
+.cursor{
+    cursor: pointer;
+}
+
+.w{
+    color: white;
+}
+
+.left{
+    background-color: #04B4AE;
+    color: white;
+    border-color: #04B4AE;
+}
+
+.navbar-default .navbar-nav > li > a:hover{
+    background-color: #01DFD7;
+}
+
+i{
+    padding-top: 5px;
+    padding-bottom: 3px;
+}
+
+.navbar-default .navbar-nav > .dropdown > .dropdown-menu > li > a:hover{
+    color: white;
+    background-color: #04B4AE;
+}
+
+.panel{
+    box-shadow: 0px 0px 20px #888888;
+    border-color: #04B4AE;
+    margin-top: 10px;
+}
+
+.panel-default > .panel-heading{
+    background-color: #04B4AE;
+    border-color: #04B4AE;
+    color: white;
+}
+
+.panel-default > .panel-body > body{
+    border-color: #04B4AE;
+}

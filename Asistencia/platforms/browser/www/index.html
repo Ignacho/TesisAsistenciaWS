@@ -1,0 +1,53 @@
+ <html ng-app="app">
+<head>
+    <title>Asistencia 1.0</title>
+    <link rel="stylesheet" type="text/css" href="vendors/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="vendors/font-awesome-4.2.0/css/font-awesome.min.css">
+    <link rel="stylesheet" type="text/css" href="styles/tablas.css">
+    <link rel="stylesheet" type="text/css" href="vendors/ng-table/ng-table.css">
+</head>
+<body ng-controller="indexController">
+
+<div ng-view>   
+
+</div>
+
+<!--Jquery-->
+<script type="text/javascript" src="vendors/jquery/jquery-2.1.1.min.js"></script>
+<!--BootstrapJS-->
+<script type="text/javascript" src="vendors/bootstrap/js/bootstrap.min.js"></script>
+<!--AngularJS-->
+<script type="text/javascript" src="vendors/angular/angular.min.js"></script>
+<script type="text/javascript" src="vendors/angular/angular-route.js"></script>
+<!--Highcharts-->
+<script type="text/javascript" src="vendors/highcharts-ng/dist/highcharts-ng.js"></script>
+<!--ngTable-->
+<script type="text/javascript" src="vendors/ng-table/ng-table.js"></script>
+
+<!--App-->
+    <!--Module-->
+    <script type="text/javascript" src="main.js"></script>
+
+    <!--Routes-->
+    <script src="routes/listado/listadoRoute.js"></script>
+    <script src="routes/materias/materiasRoute.js"></script>
+    <script src="routes/login/loginRoute.js"></script>
+    <script src="routes/login/logoutRoute.js"></script>
+
+    <!--Controllers-->
+    <script src="routes/index/indexController.js"></script>
+    <script src="routes/listado/listadoController.js"></script>
+    <script src="routes/materias/materiasController.js"></script>
+    <script src="routes/login/loginController.js"></script>
+ 
+<!--Bootstrap tooltip-->
+<script type="text/javascript">
+    $(function () {
+        $('[data-toggle="tooltip"]').tooltip()
+    });
+</script>
+
+
+</body>
+</html>
+

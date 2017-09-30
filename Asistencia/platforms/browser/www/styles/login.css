@@ -1,0 +1,77 @@
+.mt20{
+    margin-top: 7%;
+}
+
+.navbar-default{
+    display: none;
+}
+
+.login{
+    margin-top: 30px;
+    width: 35%;
+    padding-bottom: 30px;
+    box-shadow: 0px 0px 20px #888888;
+    border: 1px solid;
+    border-color: #04B4AE;
+}
+
+.header{
+    height: 40px;
+    background-color: #04B4AE;
+}
+
+.c{
+    margin-top: 0px;
+    padding-top: 10px;
+    color: white;
+}
+
+.i{
+    background-color: black;
+    color: white;
+    border-color: black;
+    width: 50px;
+}
+
+.inp{
+    height: 40px;
+}
+
+.gp{
+    width: 70%;
+}
+
+.mt15{
+    margin-top: 2%;
+}
+
+.btn{
+    width: 70%;
+    height: 40px;
+    background-color: #04B4AE;
+    border-color: #04B4AE;
+    margin-top: 10px;
+}
+
+.inp:focus{
+    border-color: #04B4AE;
+}
+
+.pass{
+    background-color: black;
+    border-color: black;
+}
+
+h5{
+    margin-top: 30px;
+}
+
+.btn-primary:hover{
+    background-color: #2E2EFE;
+    border-color: #2E2EFE;
+}
+
+.pass:hover{
+    background-color: #FF0000;
+    border-color: #FF0000;
+}

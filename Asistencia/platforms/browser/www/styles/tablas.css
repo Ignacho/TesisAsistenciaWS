@@ -1,0 +1,17 @@
+.table-striped > tbody > tr {
+	font-size: small;
+}
+
+.btn-primary{
+	background-color: rgba(0, 0, 255, 0.8);
+	border-style: none;
+}
+
+.btn-danger{
+	background-color: rgba(255, 0, 0, 0.8);
+	border-style: none;
+}
+
+.table-bordered > tbody > tr{
+
+}
