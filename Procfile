@@ -1,1 +1,1 @@
-web: vendor/bin/APP public/
+web: vendor/bin/APP/public/
