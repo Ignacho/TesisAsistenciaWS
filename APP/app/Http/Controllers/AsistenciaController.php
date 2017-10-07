@@ -110,6 +110,8 @@ class AsistenciaController extends Controller
         $i=0;
 
         foreach ($obj2 as $result) {
+		
+			if ($result->cant_faltas_act > $result->cant_faltas_max){
                 $result->libre = "T";
             }
 
