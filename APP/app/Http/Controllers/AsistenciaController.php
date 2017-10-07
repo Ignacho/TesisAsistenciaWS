@@ -89,7 +89,9 @@ class AsistenciaController extends Controller
         
         $obj2 = Inscripto::join('alumnos','inscriptos.id_alumno','=','alumnos.id')   
 
-        ->leftJoin('asistencias_cursos', function ($query) use ($today) {
+        ->join('dictados','inscriptos.id_dictado','=','dictados.id')
+		
+		->leftJoin('asistencias_cursos', function ($query) use ($today) {
                 $query->on('inscriptos.id_dictado','=','asistencias_cursos.id_dictado')
                       ->Where('asistencias_cursos.created_at','=',$today);
         })
@@ -101,13 +103,15 @@ class AsistenciaController extends Controller
 
         ->where('inscriptos.id_dictado','=', $id_curso)
         
-        ->select('alumnos.nombre','alumnos.apellido','alumnos.id AS id_alumno','inscriptos.id_dictado AS id_curso','asistencias_cursos.estado_curso','asistentes.cod_asist')
+        ->select('alumnos.nombre','alumnos.apellido','alumnos.id AS id_alumno','inscriptos.id_dictado AS id_curso','asistencias_cursos.estado_curso','asistentes.cod_asist','inscriptos.cant_faltas_act','dictados.cant_faltas_max')
         ->get();
 
         $data = [];
         $i=0;
 
         foreach ($obj2 as $result) {
+                $result->libre = "T";
+            }
 
             if ($result->cod_asist == "0"){
                 $result->cod_falta = "P";
