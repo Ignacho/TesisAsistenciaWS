@@ -194,21 +194,9 @@ class AsistenciaController extends Controller
                 ->get();   
 
                 foreach ($sql as $result) {
-                    $libre = 'F';
-
                     $cant_faltas_aux = $result->cant_faltas_act;
                     $id_inscripto = $result->id_inscripto;
-
-                    //Se presionó en Confirmar asistencia. Se verifica si el alumno quedó libre.   
-                    if ($action == 'C'){
-                        if ($result->cant_faltas_act > $result->cant_faltas_max){
-                           $libre = 'T';     
-                        }
-                    }
-                    //UPDATE faltas en inscriptos.
-                    $inscripto = Inscripto::find($result->id_inscripto);
-                    $inscripto->libre = $libre;
-                    $inscripto->save();
+                    $cant_faltas_max = $result->cant_faltas_max;
                 }    
 
                 //Asignar valor a cantidad de faltas actuales en base al nuevo codigo de asistencia seleccionado.
@@ -254,6 +242,18 @@ class AsistenciaController extends Controller
                 $ins = Inscripto::find($id_inscripto);
                 $ins->cant_faltas_act = $cant_faltas_act;
                 $ins->save(); 
+                $faltaUPD = $ins->cant_faltas_act;
+
+                //Se presionó en Confirmar asistencia. Se verifica si el alumno quedó libre.   
+                if ($action == 'C'){
+                    if ($faltaUPD > $cant_faltas_max){
+                        
+                        //Actualizo el alumno como libre.
+                        $inscripto = Inscripto::find($result->id_inscripto);
+                        $inscripto->libre = 'T';
+                        $inscripto->save();
+                    }
+                }
             }
 
             //Se presionó en Confirmar asistencia.    
@@ -293,18 +293,23 @@ class AsistenciaController extends Controller
                 ->get(); 
 
                 foreach ($sql as $result) {
-                    $libre = 'F';
-                    //Se presionó en Confirmar asistencia. Se verifica si el alumno quedó libre.   
-                    if ($action == 'C'){
-                        if ($result->cant_faltas_act > $result->cant_faltas_max){
-                           $libre = 'T';     
-                        }
-                    }    
+                        
                     //UPDATE faltas en inscriptos.
                     $inscripto = Inscripto::find($result->id_inscripto);
                     $inscripto->cant_faltas_act =  $result->cant_faltas_act + $falta;
-                    $inscripto->libre = $libre;
                     $inscripto->save();
+                    $faltaUPD = $inscripto->cant_faltas_act;
+
+                    //Se presionó en Confirmar asistencia. Se verifica si el alumno quedó libre.   
+                    if ($action == 'C'){
+                        if ($faltaUPD > $result->cant_faltas_max){
+                            
+                            //Actualizo el alumno como libre.
+                            $inscripto = Inscripto::find($result->id_inscripto);
+                            $inscripto->libre = 'T';
+                            $inscripto->save();
+                        }
+                    }
                 }    
             }
 
@@ -323,13 +328,13 @@ class AsistenciaController extends Controller
 
         $id_curso = (int) $request->id_curso;
 
+  
 
-        $sql = Inscripto::join('dictados','inscriptos.id_dictado','=','dictados.id')
-        ->where('inscriptos.id_dictado', '=',$id_curso)                
-        ->where('inscriptos.id_alumno', '=',$id_alumno)
-        ->select('inscriptos.cant_faltas_act','inscriptos.id AS id_inscripto','dictados.cant_faltas_max')
-        ->get();     
-
-        return $sql;
+                ////Obtener el código de asistencia ya guardado, antes de actualizar con el nuevo.
+                $sql = Asistente::where('asistentes.id_dictado', '=',$id_curso)
+                ->where('asistentes.id_alumno', '=',$id_alumno)
+                ->select('asistentes.cod_asist','asistentes.id AS id_asistente')
+                ->get();
+        return $sql;    
     }  
 }    
