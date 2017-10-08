@@ -60,6 +60,9 @@ class AsistenciaController extends Controller
         ->groupBy('materias.desc_mat','dictados.alt_hor','dictados.id','asistencias_cursos.estado_curso')
         
         ->select('materias.desc_mat AS Materia','dictados.alt_hor AS Alternativa','dictados.id AS IdC','asistencias_cursos.estado_curso AS Estado')
+
+        ->orderBy('materias.desc_mat')
+
         ->get();
 
         return $obj;
@@ -87,11 +90,9 @@ class AsistenciaController extends Controller
         //FIN DE VALIDACIÓN "Cursos guardados sin confirmar".
 
         
-        $obj2 = Inscripto::join('alumnos','inscriptos.id_alumno','=','alumnos.id')   
+        $obj2 = Inscripto::join('alumnos','inscriptos.id_alumno','=','alumnos.id')           
 
-        ->join('dictados','inscriptos.id_dictado','=','dictados.id')
-		
-		->leftJoin('asistencias_cursos', function ($query) use ($today) {
+        ->leftJoin('asistencias_cursos', function ($query) use ($today) {
                 $query->on('inscriptos.id_dictado','=','asistencias_cursos.id_dictado')
                       ->Where('asistencias_cursos.created_at','=',$today);
         })
@@ -103,17 +104,21 @@ class AsistenciaController extends Controller
 
         ->where('inscriptos.id_dictado','=', $id_curso)
         
-        ->select('alumnos.nombre','alumnos.apellido','alumnos.id AS id_alumno','inscriptos.id_dictado AS id_curso','asistencias_cursos.estado_curso','asistentes.cod_asist','inscriptos.cant_faltas_act','dictados.cant_faltas_max')
+        ->select('alumnos.nombre','alumnos.apellido','alumnos.id AS id_alumno','inscriptos.id_dictado AS id_curso','asistencias_cursos.estado_curso','asistentes.cod_asist','inscriptos.libre')
+
+        ->orderBy('alumnos.apellido')
+
         ->get();
+
+        //Si la materia no tiene incriptos devuelvo 501.    
+        if (!$obj2->count()){
+            return 501;
+        }
 
         $data = [];
         $i=0;
 
-        foreach ($obj2 as $result) {
-		
-			if ($result->cant_faltas_act > $result->cant_faltas_max){
-                $result->libre = "T";
-            }
+        foreach ($obj2 as $result) {    
 
             if ($result->cod_asist == "0"){
                 $result->cod_falta = "P";
@@ -140,6 +145,11 @@ class AsistenciaController extends Controller
         $action = $request->action;
 
         $data = $request->data;
+        
+        //Si están todos los alumnos libres no se tiene que registrar la asistencia.
+        if ($data==null){
+            return 500;
+        }        
 
         $cant_record = count($data);
 
@@ -177,14 +187,28 @@ class AsistenciaController extends Controller
                 }
                     
                 //Obtener la cantidad de faltas antes de actualizar.
-                $sql = Inscripto::where('inscriptos.id_dictado', '=',$id_curso)
+                $sql = Inscripto::join('dictados','inscriptos.id_dictado','=','dictados.id')
+                ->where('inscriptos.id_dictado', '=',$id_curso)                
                 ->where('inscriptos.id_alumno', '=',$id_alumno)
-                ->select('inscriptos.cant_faltas_act','inscriptos.id AS id_inscripto')
+                ->select('inscriptos.cant_faltas_act','inscriptos.id AS id_inscripto','dictados.cant_faltas_max')
                 ->get();   
 
                 foreach ($sql as $result) {
+                    $libre = 'F';
+
                     $cant_faltas_aux = $result->cant_faltas_act;
                     $id_inscripto = $result->id_inscripto;
+
+                    //Se presionó en Confirmar asistencia. Se verifica si el alumno quedó libre.   
+                    if ($action == 'C'){
+                        if ($result->cant_faltas_act > $result->cant_faltas_max){
+                           $libre = 'T';     
+                        }
+                    }
+                    //UPDATE faltas en inscriptos.
+                    $inscripto = Inscripto::find($result->id_inscripto);
+                    $inscripto->libre = $libre;
+                    $inscripto->save();
                 }    
 
                 //Asignar valor a cantidad de faltas actuales en base al nuevo codigo de asistencia seleccionado.
@@ -262,16 +286,24 @@ class AsistenciaController extends Controller
                 }
 
                 //Obtener la cantidad de faltas actuales del alumno para incrementarlas.
-                $sql = Inscripto::where('inscriptos.id_dictado', '=',$id_curso)
+                $sql = Inscripto::join('dictados','inscriptos.id_dictado','=','dictados.id')
+                ->where('inscriptos.id_dictado', '=',$id_curso)                
                 ->where('inscriptos.id_alumno', '=',$id_alumno)
-                ->select('inscriptos.cant_faltas_act','inscriptos.id AS id_inscripto')
+                ->select('inscriptos.cant_faltas_act','inscriptos.id AS id_inscripto','dictados.cant_faltas_max')
                 ->get(); 
 
                 foreach ($sql as $result) {
-                
+                    $libre = 'F';
+                    //Se presionó en Confirmar asistencia. Se verifica si el alumno quedó libre.   
+                    if ($action == 'C'){
+                        if ($result->cant_faltas_act > $result->cant_faltas_max){
+                           $libre = 'T';     
+                        }
+                    }    
                     //UPDATE faltas en inscriptos.
                     $inscripto = Inscripto::find($result->id_inscripto);
                     $inscripto->cant_faltas_act =  $result->cant_faltas_act + $falta;
+                    $inscripto->libre = $libre;
                     $inscripto->save();
                 }    
             }
@@ -285,26 +317,19 @@ class AsistenciaController extends Controller
         }
     }
 
-    /*public function pepe(Request $request) {
+    public function pepe(Request $request) {
         
-        $id_docente = (int) $request->id_docente;
-        $estado_curso = $request->estado_curso;
+        $id_alumno = (int) $request->id_alumno;
+
         $id_curso = (int) $request->id_curso;
 
-        $data = $request->data;
 
-        $data_res = json_decode($data,true);
+        $sql = Inscripto::join('dictados','inscriptos.id_dictado','=','dictados.id')
+        ->where('inscriptos.id_dictado', '=',$id_curso)                
+        ->where('inscriptos.id_alumno', '=',$id_alumno)
+        ->select('inscriptos.cant_faltas_act','inscriptos.id AS id_inscripto','dictados.cant_faltas_max')
+        ->get();     
 
-        if ($estado_curso == 'G'){//Asistencia previamente guardada.
-            echo "Guardada.";
-        }else{
-            echo "No guardada";
-            //Inserto en asistencias_cursos nuevo estado_curso = 'C'.
-            $asist_cursos = new AsistenciaCurso;
-            $asist_cursos->id_dictado = $id_curso;
-            $asist_cursos->id_docente = $id_docente;
-            $asist_cursos->estado_curso = 'C'; //Confirmado.
-            $asist_cursos->save();
-        }    
-    } */   
+        return $sql;
+    }  
 }    
