@@ -56,7 +56,7 @@ class AsistenciaController extends Controller
         ->where(function ($query) use ($today){
                 $query->whereNull('asistencias_cursos.estado_curso')
                       ->orWhere('asistencias_cursos.estado_curso','<>','C')
-					  ->orWhere('asistencias_cursos.created_at','<>',$today);
+					  ->orWhere('DATE_FORMAT(asistencias_cursos.created_at,'%Y-%m-%d')','<>',$today);
         })
         ->groupBy('materias.desc_mat','dictados.alt_hor','dictados.id','asistencias_cursos.estado_curso')
         
