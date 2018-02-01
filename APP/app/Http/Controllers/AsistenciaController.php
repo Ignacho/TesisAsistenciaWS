@@ -53,7 +53,7 @@ class AsistenciaController extends Controller
         ->where('dictados.ano','=',date("Y"))
         ->where('dictados.fecha_fin','>=',$today)
         ->where('dictados.fecha_inicio','<=', $today)
-        ->where(function ($query) {
+        ->where(function ($query) use ($today){
                 $query->whereNull('asistencias_cursos.estado_curso')
                       ->orWhere('asistencias_cursos.estado_curso','<>','C')
 					  ->orWhere('asistencias_cursos.created_at','<>',$today);
