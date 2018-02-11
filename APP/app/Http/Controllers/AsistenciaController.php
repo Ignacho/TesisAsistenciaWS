@@ -46,27 +46,53 @@ class AsistenciaController extends Controller
         $obj = Docente::join('asignados','docentes.id','=', 'asignados.id_docente')
         ->join('dictados','asignados.id_dictado','=','dictados.id')
         ->join('materias','dictados.id_materia','=','materias.id')
-        ->leftJoin('asistencias_cursos','dictados.id','=','asistencias_cursos.id_dictado')
 
         ->where('docentes.id', '=',$id_docente)
         ->where('dictados.dia_cursada','=',$dia_semana)
         ->where('dictados.ano','=',date("Y"))
         ->where('dictados.fecha_fin','>=',$today)
         ->where('dictados.fecha_inicio','<=', $today)
-        ->where(function ($query) use ($today){
-                $query->whereNull('asistencias_cursos.estado_curso')
-                      ->orWhere('asistencias_cursos.estado_curso','<>','C')
-					  ->orWhere('DATE_FORMAT(asistencias_cursos.created_at,'%Y-%m-%d')','<>',$today);
-        })
-        ->groupBy('materias.desc_mat','dictados.alt_hor','dictados.id','asistencias_cursos.estado_curso')
         
-        ->select('materias.desc_mat AS Materia','dictados.alt_hor AS Alternativa','dictados.id AS IdC','asistencias_cursos.estado_curso AS Estado')
+        ->select('materias.desc_mat AS Materia','dictados.alt_hor AS Alternativa','dictados.id AS IdC')
 
         ->orderBy('materias.desc_mat')
 
         ->get();
+		
+		$data = [];
+        $i=0;
+		
+		/*Recorro las materias que se corresponden al día actual*/
+        foreach ($obj as $result) {    
 
-        return $obj;
+			/*Verifico si por cada materia posee la asistencia Guardada (solo será la del día actual ya que el JOB al finalizar el día Confirma todas las asistencias)*/
+			$objMat = AsistenciaCurso::where('id_dictado','=',$result->IdC)
+					->where('estado_curso','=','G')
+					->select('id_dictado')
+					->get();
+
+			/*Si encuentra una asistencia Guardada devuelve dicho estado*/					
+			if ($objMat->count()){
+				$result->Estado = "G";
+				$data[$i] = $result;
+				$i++;
+			}else{/*Si no hay asistencias Guardadas, verifico que no haya una Confirmada para el día actual*/
+				$objMat = AsistenciaCurso::where('id_dictado','=',$result->IdC)
+						->where('estado_curso','=','C')
+						->where('created_at','=',$today)
+						->select('id_dictado')
+						->get();
+				
+				/*Si no hay ninguna Guardada la informo en el listado de materias*/
+				if (!$objMat->count()){
+					$result->Estado = "";
+					$data[$i] = $result;
+					$i++;
+				}
+			}
+        }
+
+        return $data;
     }
 
     public function getInscriptos(Request $request) {
@@ -98,9 +124,9 @@ class AsistenciaController extends Controller
                       ->Where('asistencias_cursos.created_at','=',$today);
         })
 
-        ->leftJoin('asistentes', function ($query) use ($id_curso) {
+        ->leftJoin('asistentes', function ($query) use ($today) {
                 $query->on('alumnos.id','=','asistentes.id_alumno')
-                      ->Where('asistentes.id_dictado','=',$id_curso);
+                      ->Where('asistentes.created_at','=',$today);
         })
 
         ->where('inscriptos.id_dictado','=', $id_curso)
@@ -144,6 +170,7 @@ class AsistenciaController extends Controller
         $estado_curso = $request->estado_curso;
         $id_curso = (int) $request->id_curso;
         $action = $request->action;
+		$today = gmDate("Y-m-d");
 
         $data = $request->data;
         
@@ -173,6 +200,7 @@ class AsistenciaController extends Controller
                 ////Obtener el código de asistencia ya guardado, antes de actualizar con el nuevo.
                 $sql = Asistente::where('asistentes.id_dictado', '=',$id_curso)
                 ->where('asistentes.id_alumno', '=',$id_alumno)
+				->where('asistentes.created_at', '=',$today)
                 ->select('asistentes.cod_asist','asistentes.id AS id_asistente')
                 ->get();
 
@@ -332,10 +360,9 @@ class AsistenciaController extends Controller
   
 
                 ////Obtener el código de asistencia ya guardado, antes de actualizar con el nuevo.
-                $sql = Asistente::where('asistentes.id_dictado', '=',$id_curso)
-                ->where('asistentes.id_alumno', '=',$id_alumno)
-                ->select('asistentes.cod_asist','asistentes.id AS id_asistente')
+                $sql = AsistenciaCurso::where('estado_curso','=','C')
+                ->select('asistencias_cursos.created_at')
                 ->get();
-        return $sql;    
+        return $sql;
     }  
 }    
