@@ -54,7 +54,9 @@ class AsistenciaController extends Controller
         ->where('dictados.fecha_inicio','<=', $today)
         
         ->select('materias.desc_mat AS Materia','dictados.alt_hor AS Alternativa','dictados.id AS IdC')
-
+		
+		->groupBy('materias.desc_mat','dictados.alt_hor','dictados.id')
+		
         ->orderBy('materias.desc_mat')
 
         ->get();
