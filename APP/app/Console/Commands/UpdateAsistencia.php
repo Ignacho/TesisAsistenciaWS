@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
+use App\AsistenciaCurso;
 
 class UpdateAsistencia extends Command
 {
@@ -37,6 +38,11 @@ class UpdateAsistencia extends Command
      */
     public function handle()
     {
-        $this->info('hola');
+        $this->info('Inicio Actualización Asistencias NO Confirmadas...');
+		//Actualizo las Asistencias no Confimadas al cierre del día.
+		$ConfirmAsis = AsistenciaCurso::where('id_dictado', $id_curso)
+					 ->where('estado_curso', 'G')
+					 ->update('estado_curso', 'C');
+		$this->info('Fin Actualización Asistencias NO Confirmadas...');					
     }
 }
