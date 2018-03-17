@@ -40,8 +40,7 @@ class UpdateAsistencia extends Command
     {
         $this->info('Inicio Actualización Asistencias NO Confirmadas...');
 		//Actualizo las Asistencias no Confimadas al cierre del día.
-		$ConfirmAsis = AsistenciaCurso::where('id_dictado', $id_curso)
-					 ->where('estado_curso', 'G')
+		$ConfirmAsis = AsistenciaCurso::where('estado_curso', 'G')
 					 ->update('estado_curso', 'C');
 		$this->info('Fin Actualización Asistencias NO Confirmadas...');					
     }
