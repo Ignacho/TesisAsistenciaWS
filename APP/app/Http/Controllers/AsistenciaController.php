@@ -103,7 +103,7 @@ class AsistenciaController extends Controller
         $id_docente = $request->input('id_docente');
 
         $today = gmDate("Y-m-d");
-return $today;
+
         //INICIO DE VALIDACIÓN "Cursos guardados sin confirmar".
         $obj1 = AsistenciaCurso::where('estado_curso','=','G')
                 ->where('id_docente','=',$id_docente)
