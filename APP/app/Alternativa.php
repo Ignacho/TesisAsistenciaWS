@@ -4,11 +4,11 @@ namespace App;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Asistente extends Model
+class Alternativa extends Model
 {
-    protected $table = 'asistentes';
+    protected $table = 'alternativas';
     
-    protected $fillable = ['id_alumno','id_dictado','cod_asist'];
+    protected $fillable = ['codigo','descripcion'];
     
     protected $dates = ['created_at','updated_at','deleted_at'];
 }

@@ -7,9 +7,11 @@ use App\Usuario;
 use App\Docente;
 use App\Inscripto;
 use App\AsistenciaCurso;
+use App\DictadoClase;
 use App\Asistente;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Crypt;
+//date_default_timezone_set('America/Argentina/Buenos_Aires');
 
 class AsistenciaController extends Controller
 {
@@ -21,9 +23,11 @@ class AsistenciaController extends Controller
         //$password = Crypt::encrypt($request->input('password'));
         //return Crypt::decrypt($password);
         $user = Usuario::join('docentes','usuarios.id','=', 'docentes.id_usuario')
+		->join('permisos','usuarios.id_permiso','=','permisos.id')
         ->where('email', '=',$email)
         ->where('password','=',$password)
-        ->where('estado','=',1)
+        ->where('estado','=',1)//Activo
+		->where('permisos.id','=',2)//Docente
         ->select('docentes.id AS id_docente')
         ->get();
 
@@ -37,25 +41,27 @@ class AsistenciaController extends Controller
     }
     
     public function getMaterias(Request $request) {
-        
         $id_docente = $request->input('id_docente');
         $dias = array("domingo","lunes","martes","miercoles","jueves","viernes","sabado");
         $dia_semana = $dias[date("w")];
-        $today = gmDate("Y-m-d");
+        $today = date("Y-m-d");
 
         $obj = Docente::join('asignados','docentes.id','=', 'asignados.id_docente')
         ->join('dictados','asignados.id_dictado','=','dictados.id')
         ->join('materias','dictados.id_materia','=','materias.id')
+		->join('dictados_clases','dictados.id','=','dictados_clases.id_dictado')
+		->join('dias','dictados_clases.id_dia','=','dias.id')
+		->join('alternativas','dictados_clases.id_alternativa','=','alternativas.id')
 
         ->where('docentes.id', '=',$id_docente)
-        ->where('dictados.dia_cursada','=',$dia_semana)
+        ->where('dias.descripcion','=',$dia_semana)
         ->where('dictados.ano','=',date("Y"))
         ->where('dictados.fecha_fin','>=',$today)
         ->where('dictados.fecha_inicio','<=', $today)
         
-        ->select('materias.desc_mat AS Materia','dictados.alt_hor AS Alternativa','dictados.id AS IdC')
+		->select('materias.desc_mat AS Materia','alternativas.codigo AS Alternativa','dictados.id AS IdC')
 		
-		->groupBy('materias.desc_mat','dictados.alt_hor','dictados.id')
+		//->groupBy('materias.desc_mat','alternativas.codigo','dictados.id')
 		
         ->orderBy('materias.desc_mat')
 
@@ -81,7 +87,7 @@ class AsistenciaController extends Controller
 			}else{/*Si no hay asistencias Guardadas, verifico que no haya una Confirmada para el día actual*/
 				$objMat = AsistenciaCurso::where('id_dictado','=',$result->IdC)
 						->where('estado_curso','=','C')
-						->where('created_at','=',$today)
+						->whereDate('created_at','=',$today)
 						->select('id_dictado')
 						->get();
 				
@@ -98,11 +104,9 @@ class AsistenciaController extends Controller
     }
 
     public function getInscriptos(Request $request) {
-        
         $id_curso = $request->input('id_curso');
         $id_docente = $request->input('id_docente');
-
-        $today = gmDate("Y-m-d");
+        $today = date("Y-m-d");
 
         //INICIO DE VALIDACIÓN "Cursos guardados sin confirmar".
         $obj1 = AsistenciaCurso::where('estado_curso','=','G')
@@ -123,12 +127,12 @@ class AsistenciaController extends Controller
 
         ->leftJoin('asistencias_cursos', function ($query) use ($today) {
                 $query->on('inscriptos.id_dictado','=','asistencias_cursos.id_dictado')
-                      ->Where('asistencias_cursos.created_at','=',$today);
+                      ->whereDate('asistencias_cursos.created_at','=',$today);
         })
 
         ->leftJoin('asistentes', function ($query) use ($today) {
                 $query->on('alumnos.id','=','asistentes.id_alumno')
-                      ->Where('asistentes.created_at','=',$today);
+                      ->whereDate('asistentes.created_at','=',$today);
         })
 
         ->where('inscriptos.id_dictado','=', $id_curso)
@@ -172,7 +176,7 @@ class AsistenciaController extends Controller
         $estado_curso = $request->estado_curso;
         $id_curso = (int) $request->id_curso;
         $action = $request->action;
-		$today = gmDate("Y-m-d");
+		$today = date("Y-m-d");
 
         $data = $request->data;
         
@@ -202,7 +206,7 @@ class AsistenciaController extends Controller
                 ////Obtener el código de asistencia ya guardado, antes de actualizar con el nuevo.
                 $sql = Asistente::where('asistentes.id_dictado', '=',$id_curso)
                 ->where('asistentes.id_alumno', '=',$id_alumno)
-				->where('asistentes.created_at', '=',$today)
+				->whereDate('asistentes.created_at', '=',$today)
                 ->select('asistentes.cod_asist','asistentes.id AS id_asistente')
                 ->get();
 
@@ -353,18 +357,5 @@ class AsistenciaController extends Controller
         }
     }
 
-    public function pepe(Request $request) {
-        
-        $id_alumno = (int) $request->id_alumno;
-
-        $id_curso = (int) $request->id_curso;
-
-  
-
-                ////Obtener el código de asistencia ya guardado, antes de actualizar con el nuevo.
-                $sql = AsistenciaCurso::where('estado_curso','=','C')
-                ->select('asistencias_cursos.created_at')
-                ->get();
-        return $sql;
-    }  
+     
 }    

@@ -13,7 +13,8 @@ class Kernel extends ConsoleKernel
      * @var array
      */
     protected $commands = [
-        Commands\UpdateAsistencia::class
+        Commands\UpdateAsistencia::class,
+		Commands\InsertAsistencia::class
     ];
 
     /**
@@ -24,8 +25,9 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // $schedule->command('inspire')
-        //          ->hourly();
+         /*$schedule->command('UpdateAsistencia2')
+                  ->hourly()
+                  ->between('12:50', '12:55');*/
     }
 
     /**

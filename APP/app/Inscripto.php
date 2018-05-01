@@ -8,7 +8,7 @@ class Inscripto extends Model
 {
     protected $table = 'inscriptos';
     
-    protected $fillable = ['id_alumno','id_dictado','cant_faltas_act'];
+    protected $fillable = ['id_alumno','id_dictado','cant_faltas_act','libre'];
     
     protected $dates = ['created_at','updated_at','deleted_at'];
 }
