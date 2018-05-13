@@ -124,16 +124,16 @@ class AsistenciaController extends Controller
 
         
         $obj2 = Inscripto::join('alumnos','inscriptos.id_alumno','=','alumnos.id')           
-
-        ->leftJoin('asistencias_cursos', function ($query) use ($today) {
-                $query->on('inscriptos.id_dictado','=','asistencias_cursos.id_dictado')
+        ->join('dictados','inscriptos.id_dictado','=','dictados.id')
+		->leftJoin('asistentes', function ($query) use ($today) {
+                $query->on('inscriptos.id_alumno','=','asistentes.id_alumno')
+					  ->on('inscriptos.id_dictado','=','asistentes.id_dictado')
+					  ->whereDate('asistentes.created_at','=',$today);;
+        })
+		->leftJoin('asistencias_cursos', function ($query) use ($today) {
+                $query->on('dictados.id','=','asistencias_cursos.id_dictado')
                       ->whereDate('asistencias_cursos.created_at','=',$today);
-        })
-
-        ->leftJoin('asistentes', function ($query) use ($today) {
-                $query->on('alumnos.id','=','asistentes.id_alumno')
-                      ->whereDate('asistentes.created_at','=',$today);
-        })
+        })        	
 
         ->where('inscriptos.id_dictado','=', $id_curso)
         
