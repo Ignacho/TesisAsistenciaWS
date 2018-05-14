@@ -43,28 +43,34 @@ class InsertAsistencia extends Command
 		$dias = array("domingo","lunes","martes","miercoles","jueves","viernes","sabado");
         $dia_semana = $dias[date("w")];
 		
-		//Actualizo las Asistencias no Confimadas al cierre del día.
-		$objAsisRegist = AsistenciaCurso::join('dictados_clases','asistencias_cursos.id_dictado','=', 'dictados_clases.id_dictado')
-					   ->join('dias','dictados_clases.id_dia','=','dias.id')
+		//Actualizo las Asistencias no Confimadas al cierre del día.				   
+		$objAsisRegist = DictadoClase::join('dias','dictados_clases.id_dia','=', 'dias.id')
+					   ->leftJoin('asistencias_cursos', function ($query) {
+								$query->on('dictados_clases.id_dictado','=','asistencias_cursos.id_dictado')
+									  ->whereDate('asistencias_cursos.created_at','=',date("Y-m-d"));
+						})
+					   ->whereNull('asistencias_cursos.id')
 					   ->where('dias.descripcion', '=',$dia_semana)
-					   ->whereDate('asistencias_cursos.created_at', '=',date("Y-m-d"))
-					   ->select('asistencias_cursos.id_dictado')
+					   ->select('dictados_clases.id_dictado')
 					   ->get();
-
-		/*Si encuentra la asistencia Registrada esta OK*/									
+				   					   			
+		/*Asistencias NO Registradas*/									
 		if ($objAsisRegist->count()){
-			$this->info('Asistencias del día Registradas...');
-		/*Si no se registro la asistencia, obtengo los alumnos para insertarlos...*/
-		}else{
+
 			$this->info('Inicio Insercción  Asistencias NO Registradas...');	
 			
-			$objAsisRegist = DictadoClase::join('inscriptos','dictados_clases.id_dictado','=', 'inscriptos.id_dictado')
-						   ->join('dictados','dictados_clases.id_dictado','=','dictados.id')
-						   ->join('asignados','dictados.id','=','asignados.id_dictado')
-				           ->join('dias','dictados_clases.id_dia','=','dias.id')
+			/*Si no se registro la asistencia, obtengo la data para insertarlos...*/			   
+			$objAsisRegist = DictadoClase::join('dias','dictados_clases.id_dia','=', 'dias.id')
+						   ->leftJoin('asistencias_cursos', function ($query) {
+									$query->on('dictados_clases.id_dictado','=','asistencias_cursos.id_dictado')
+										  ->whereDate('asistencias_cursos.created_at','=',date("Y-m-d"));
+							})
+						   ->join('inscriptos','dictados_clases.id_dictado','=', 'inscriptos.id_dictado')
+						   ->join('asignados','dictados_clases.id_dictado','=','asignados.id_dictado')
+						   ->whereNull('asistencias_cursos.id')
 						   ->where('dias.descripcion', '=',$dia_semana)
 						   ->select('inscriptos.id_dictado','inscriptos.id_alumno','asignados.id_docente')
-						   ->get();					   
+						   ->get();						   
 		
 			$id_dictado_aux = null;
 			foreach ($objAsisRegist as $record) {						
@@ -89,8 +95,10 @@ class InsertAsistencia extends Command
 
 				$id_dictado_aux = $record->id_dictado;
 				
-			}	
+			}			
 			$this->info('Fin Insercción  Asistencias NO Registradas...');
+		}else{
+			$this->info('Asistencias del día Registradas...');
 		}		
     }
 }
