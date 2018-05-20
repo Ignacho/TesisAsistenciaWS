@@ -56,8 +56,8 @@ class AsistenciaController extends Controller
         ->where('docentes.id', '=',$id_docente)
         ->where('dias.descripcion','=',$dia_semana)
         ->where('dictados.ano','=',date("Y"))
-        ->where('dictados.fecha_fin','>=',$today)
-        ->where('dictados.fecha_inicio','<=', $today)
+        ->whereDate('dictados.fecha_fin','>=',$today)
+        ->whereDate('dictados.fecha_inicio','<=', $today)
         
 		->select('materias.desc_mat AS Materia','alternativas.codigo AS Alternativa','dictados.id AS IdC')
 		
@@ -76,6 +76,7 @@ class AsistenciaController extends Controller
 			/*Verifico si por cada materia posee la asistencia Guardada (solo será la del día actual ya que el JOB al finalizar el día Confirma todas las asistencias)*/
 			$objMat = AsistenciaCurso::where('id_dictado','=',$result->IdC)
 					->where('estado_curso','=','G')
+					->whereDate('created_at','=',$today)
 					->select('id_dictado')
 					->get();
 
@@ -171,30 +172,30 @@ class AsistenciaController extends Controller
 
 
     public function setRegistrarAsistencia(Request $request) {
-
-        $id_docente = (int) $request->id_docente;
+        
+		$id_docente = (int) $request->id_docente;
         $estado_curso = $request->estado_curso;
         $id_curso = (int) $request->id_curso;
         $action = $request->action;
 		$today = date("Y-m-d");
 
         $data = $request->data;
-        
+		
         //Si están todos los alumnos libres no se tiene que registrar la asistencia.
         if ($data==null){
             return 500;
         }        
 
         $cant_record = count($data);
-
-        for ($i=0 ; $i<$cant_record ; $i++){
+		
+		for ($i=0 ; $i<$cant_record ; $i++){
             $data_aux =json_decode($data[$i],true);
 
             $data_res[$i]["falta"] = json_decode($data_aux["falta"],true);
             $data_res[$i]["id_alumno"] = json_decode($data_aux["id_alumno"],true);
         }
-
-
+		
+		
         if ($estado_curso == 'G'){//Asistencia previamente guardada.
 
             //Recorro todos los registros del arreglo de objetos (cantidad alumnos a guardar asistencia).
