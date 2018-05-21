@@ -56,8 +56,8 @@ class AsistenciaController extends Controller
         ->where('docentes.id', '=',$id_docente)
         ->where('dias.descripcion','=',$dia_semana)
         ->where('dictados.ano','=',date("Y"))
-        ->whereDate('dictados.fecha_fin','>=',$today)
-        ->whereDate('dictados.fecha_inicio','<=', $today)
+        ->where('dictados.fecha_fin','>=',$today)
+        ->where('dictados.fecha_inicio','<=', $today)
         
 		->select('materias.desc_mat AS Materia','alternativas.codigo AS Alternativa','dictados.id AS IdC')
 		
@@ -76,7 +76,6 @@ class AsistenciaController extends Controller
 			/*Verifico si por cada materia posee la asistencia Guardada (solo será la del día actual ya que el JOB al finalizar el día Confirma todas las asistencias)*/
 			$objMat = AsistenciaCurso::where('id_dictado','=',$result->IdC)
 					->where('estado_curso','=','G')
-					->whereDate('created_at','=',$today)
 					->select('id_dictado')
 					->get();
 
@@ -172,30 +171,30 @@ class AsistenciaController extends Controller
 
 
     public function setRegistrarAsistencia(Request $request) {
-        
-		$id_docente = (int) $request->id_docente;
+
+        $id_docente = (int) $request->id_docente;
         $estado_curso = $request->estado_curso;
         $id_curso = (int) $request->id_curso;
         $action = $request->action;
 		$today = date("Y-m-d");
 
         $data = $request->data;
-		
+        
         //Si están todos los alumnos libres no se tiene que registrar la asistencia.
         if ($data==null){
             return 500;
         }        
 
         $cant_record = count($data);
-		
-		for ($i=0 ; $i<$cant_record ; $i++){
+
+        for ($i=0 ; $i<$cant_record ; $i++){
             $data_aux =json_decode($data[$i],true);
 
             $data_res[$i]["falta"] = json_decode($data_aux["falta"],true);
             $data_res[$i]["id_alumno"] = json_decode($data_aux["id_alumno"],true);
         }
-		
-		
+
+
         if ($estado_curso == 'G'){//Asistencia previamente guardada.
 
             //Recorro todos los registros del arreglo de objetos (cantidad alumnos a guardar asistencia).
@@ -358,69 +357,163 @@ class AsistenciaController extends Controller
         }
     }
 	
-	public function test(Request $request) {
+	public function cantAsistencias(Request $request) {
         
-        $dias = array("domingo","lunes","martes","miercoles","jueves","viernes","sabado");
-        $dia_semana = $dias[date("w")];
+		$id_carrera = $request->input('id_carrera');
+        $id_materia = $request->input('id_materia');
+		$date_from = $request->input('date_from');
+		$date_to = $request->input('date_to');
+        $i=1;
+
+
+		$result[0] = ['asistencias','total'];
 		
-		//Actualizo las Asistencias no Confimadas al cierre del día.				   
-		$objAsisRegist = DictadoClase::join('dias','dictados_clases.id_dia','=', 'dias.id')
-					   ->leftJoin('asistencias_cursos', function ($query) {
-								$query->on('dictados_clases.id_dictado','=','asistencias_cursos.id_dictado')
-									  ->whereDate('asistencias_cursos.created_at','=',date("Y-m-d"));
-						})
-					   ->whereNull('asistencias_cursos.id')
-					   ->where('dias.descripcion', '=',$dia_semana)
-					   ->select('dictados_clases.id_dictado')
-					   ->get();
-	   					   			
-		/*Asistencias NO Registradas*/									
-		if ($objAsisRegist->count()){
-
-			//$this->info('Inicio Insercción  Asistencias NO Registradas...');	
-			
-			/*Si no se registro la asistencia, obtengo la data para insertarlos...*/			   
-			$objAsisRegist = DictadoClase::join('dias','dictados_clases.id_dia','=', 'dias.id')
-						   ->leftJoin('asistencias_cursos', function ($query) {
-									$query->on('dictados_clases.id_dictado','=','asistencias_cursos.id_dictado')
-										  ->whereDate('asistencias_cursos.created_at','=',date("Y-m-d"));
-							})
-						   ->join('inscriptos','dictados_clases.id_dictado','=', 'inscriptos.id_dictado')
-						   ->join('asignados','dictados_clases.id_dictado','=','asignados.id_dictado')
-						   ->whereNull('asistencias_cursos.id')
-						   ->where('dias.descripcion', '=',$dia_semana)
-						   ->select('inscriptos.id_dictado','inscriptos.id_alumno','asignados.id_docente')
-						   ->get();						   
-		return 	$objAsisRegist;
-			$id_dictado_aux = null;
-			foreach ($objAsisRegist as $record) {						
-				
-				//INSERT asistentes
-				$asistente = new Asistente;
-				$asistente->id_alumno = $record->id_alumno;
-				$asistente->id_dictado = $record->id_dictado;
-				$asistente->cod_asist = 0;//Presente 
-				$asistente->save();
-				
-				//Si se trata de otro curso inserto se respectiva asistencia.
-				if($id_dictado_aux <> $record->id_dictado){
-
-					//Inserto en asistencias_cursos las asistencia en estado confirmada.
-					$asist_cursos = new AsistenciaCurso;
-					$asist_cursos->id_dictado = $record->id_dictado;
-					$asist_cursos->id_docente = $record->id_docente;
-					$asist_cursos->estado_curso = 'C'; //Se registran Confirmadas.
-					$asist_cursos->save();
-				}
-
-				$id_dictado_aux = $record->id_dictado;
-				
-			}			
-			//$this->info('Fin Insercción  Asistencias NO Registradas...');
+		/*PRESENTES*/
+		$sql0 = Asistente::join('dictados','asistentes.id_dictado','=','dictados.id')
+			->join('materias','dictados.id_materia','=','materias.id')		
+			->where('materias.id_carrera', '=',$id_carrera)
+			->where('materias.id', '=',$id_materia)
+			->where('asistentes.cod_asist', '=','0')
+			->whereDate('asistentes.created_at', '>=',$date_from)
+			->whereDate('asistentes.created_at', '<=',$date_to)
+			->select(DB::raw('count(1) AS total'))
+			->groupBy('asistentes.cod_asist')				
+			->get();
+		
+		//Si no devuelve registros...
+		if (!$sql0->count()){
+			$result[$i] = ["Presentes", 0];
+            $i++;			
 		}else{
-			//$this->info('Asistencias del día Registradas...');
-		}		
+			foreach ($sql0 as $key => $value) {
+				$result[$i] = ["Presentes", $value->total];
+				$i++;
+			}	
+		}
 		
+		/*AUSENTES*/
+		$sql1 = Asistente::join('dictados','asistentes.id_dictado','=','dictados.id')
+			->join('materias','dictados.id_materia','=','materias.id')		
+			->where('materias.id_carrera', '=',$id_carrera)
+			->where('materias.id', '=',$id_materia)
+			->where('asistentes.cod_asist', '=','1')
+			->whereDate('asistentes.created_at', '>=',$date_from)
+			->whereDate('asistentes.created_at', '<=',$date_to)
+			->select(DB::raw('count(1) AS total'))
+			->groupBy('asistentes.cod_asist')	
+			->get();
+
+		//Si no devuelve registros...
+		if (!$sql1->count()){
+			$result[$i] = ["Ausentes", 0];
+            $i++;			
+		}else{
+			foreach ($sql1 as $key => $value) {
+				$result[$i] = ["Ausentes", $value->total];
+				$i++;
+			}	
+		}
+	
+		/*MEDIA FALTA*/
+		$sql2 = Asistente::join('dictados','asistentes.id_dictado','=','dictados.id')
+			->join('materias','dictados.id_materia','=','materias.id')		
+			->where('materias.id_carrera', '=',$id_carrera)
+			->where('materias.id', '=',$id_materia)
+			->where('asistentes.cod_asist', '=','2')
+			->whereDate('asistentes.created_at', '>=',$date_from)
+			->whereDate('asistentes.created_at', '<=',$date_to)
+			->select(DB::raw('count(1) AS total'))
+			->groupBy('asistentes.cod_asist')	
+			->get();
+
+		//Si no devuelve registros...
+		if (!$sql2->count()){
+			$result[$i] = ["Media Falta", 0];
+            $i++;			
+		}else{
+			foreach ($sql2 as $key => $value) {
+				$result[$i] = ["Media Falta", $value->total];
+				$i++;
+			}	
+		}	
+	
+		return	$result;
+    }  
+	
+	public function cantInscriptos(Request $request) {
+        
+		$id_carrera = $request->input('id_carrera');
+        $id_materia = $request->input('id_materia');
+		$ano = $request->input('ano');
+		$cuat = $request->input('cuat');
+        $i=1;
+
+
+		$result[0] = ['Materia','total'];
+
+		/*SIN MATERIA SELECCIONADA*/
+		if($id_materia == ""){
+			echo "vacio";
+			$sql = Inscripto::join('dictados','inscriptos.id_dictado','=','dictados.id')
+				->join('materias','dictados.id_materia','=','materias.id')
+				->where('materias.id_carrera', '=',$id_carrera)
+				->where('dictados.ano', '=',$ano)
+				->where('dictados.cuat', '=',$cuat)
+				->select('materias.desc_mat', DB::raw('count(1) AS total'))
+				->groupBy('materias.desc_mat')				
+				->get();
+
+			foreach ($sql as $key => $value) {
+				$result[$i] = [$value->desc_mat, $value->total];
+				$i++;
+			}
+		
+		/*CON MATERIA SELECCIONADA*/		
+		}else{
+			$sql = Inscripto::join('dictados','inscriptos.id_dictado','=','dictados.id')
+				->join('materias','dictados.id_materia','=','materias.id')
+				->where('materias.id', '=',$id_materia)
+				->where('materias.id_carrera', '=',$id_carrera)
+				->where('dictados.ano', '=',$ano)
+				->where('dictados.cuat', '=',$cuat)
+				->select('materias.desc_mat', DB::raw('count(1) AS total'))
+				->groupBy('materias.desc_mat')				
+				->get();
+
+			foreach ($sql as $key => $value) {
+				$result[$i] = [$value->desc_mat, $value->total];
+				$i++;
+			}
+			
+		}
+
+		return $result;
+    }
+	
+	public function cantAlumnosLibres(Request $request) {
+        
+		$id_carrera = $request->input('id_carrera');
+        $ano = $request->input('ano');
+		$cuat = $request->input('cuat');
+        $i=1;
+
+		$result[0] = ['Materia','totalLibres'];
+
+		$sql = Inscripto::join('dictados','inscriptos.id_dictado','=','dictados.id')
+			->join('materias','dictados.id_materia','=','materias.id')
+			->where('dictados.ano', '=',$ano)
+			->where('dictados.cuat', '=',$cuat)
+			->where('inscriptos.libre','=','T')
+			->select('materias.desc_mat', DB::raw('count(1) AS total'))
+			->groupBy('materias.desc_mat')				
+			->get();
+
+		foreach ($sql as $key => $value) {
+			$result[$i] = [$value->desc_mat, $value->total];
+			$i++;
+		}
+		
+		return $result;
     }
 
      
