@@ -25,4 +25,6 @@ Route::get('/inscripto', 'AsistenciaController@getInscriptos');
 
 Route::post('/registrarAsistencia', 'AsistenciaController@setRegistrarAsistencia');
 
-Route::post('/test', 'AsistenciaController@test');
+Route::post('/cantAsistencias', 'AsistenciaController@cantAsistencias');
+Route::post('/cantInscriptos', 'AsistenciaController@cantInscriptos');
+Route::post('/cantAlumnosLibres', 'AsistenciaController@cantAlumnosLibres');
