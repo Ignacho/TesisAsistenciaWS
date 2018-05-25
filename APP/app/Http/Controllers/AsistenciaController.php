@@ -21,23 +21,44 @@ class AsistenciaController extends Controller
         
         $email = $request->input('email');
         $password = $request->input('password');
-        //$password = Crypt::encrypt($request->input('password'));
-        //return Crypt::decrypt($password);
-        $user = Usuario::join('docentes','usuarios.id','=', 'docentes.id_usuario')
-		->join('permisos','usuarios.id_permiso','=','permisos.id')
-        ->where('email', '=',$email)
-        ->where('password','=',$password)
-        ->where('estado','=',1)//Activo
-		->where('permisos.id','=',2)//Docente
-        ->select('docentes.id AS id_docente')
-        ->get();
+		$ch = curl_init();
+		curl_setopt($ch, CURLOPT_URL,"http://caeceasistencia.com/api/authenticate");
+		curl_setopt($ch, CURLOPT_POST, 1);
+		curl_setopt($ch, CURLOPT_POSTFIELDS,"email=".$email."&password=".$password);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		$token = curl_exec ($ch);
+		curl_close ($ch);
+		$formattedToken = json_decode($token);
 
-        //Si no existe el usuario ya sea por email o psw incorrectos devuelvo 500.    
-        if (!$user->count()){
-                return 500;
-        }else{
-                return $user;
-        }    
+		//Error al autenticar credenciales.	
+		if(isset($formattedToken->error)){
+			return 500;
+		}else{
+		
+			$ch = curl_init();
+			curl_setopt($ch, CURLOPT_URL,"http://caeceasistencia.com/api/identity?token=".$formattedToken->token);
+			curl_setopt($ch, CURLOPT_POST, 1);
+			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+			$userData = curl_exec ($ch);
+			curl_close ($ch);
+			$userInfo = json_decode($userData);
+			$id_usuario = $userInfo->id;
+			
+			//Error al autenticar token.
+			if(isset($formattedToken->error)){
+				return 500;
+			}else{	
+				$user = Usuario::join('docentes','usuarios.id','=', 'docentes.id_usuario')
+				->join('permisos','usuarios.id_permiso','=','permisos.id')
+				->where('usuarios.id', '=',$id_usuario)
+				->where('usuarios.estado','=',1)//Activo
+				->where('permisos.id','=',2)//Docente
+				->select('docentes.id AS id_docente')
+				->get(); 
+				
+				return $user;
+			}	
+		}    
 
     }
     
@@ -360,17 +381,25 @@ class AsistenciaController extends Controller
 	
 	public function cantAsistencias(Request $request) {
         
-		$id_carrera = $request->input('id_carrera');
-        $id_materia = $request->input('id_materia');
-		$date_from = $request->input('date_from');
-		$date_to = $request->input('date_to');
+		$id_carrera = 1;//$request->input('id_carrera');
+        $id_materia = 22;//$request->input('id_materia');
+		$date_from = '2018-01-01';//$request->input('date_from');
+		$date_to = '2018-05-20';//$request->input('date_to');
         $i=1;
-
-
-		$result[0] = ['asistencias','total'];
+		
+		$result = new \StdClass();
+		
+		$myObj = new \StdClass();
+		$myObj->cols=[];
+		$myObj->rows=[];
+		
+		$myObj->cols[0] = new \StdClass();
+		$myObj->cols[0]->id = "insc";
+		$myObj->cols[0]->label = "Inscriptos";
+		$myObj->cols[0]->type = "string";
 		
 		/*PRESENTES*/
-		$sql0 = Asistente::join('dictados','asistentes.id_dictado','=','dictados.id')
+		$presentes = Asistente::join('dictados','asistentes.id_dictado','=','dictados.id')
 			->join('materias','dictados.id_materia','=','materias.id')		
 			->where('materias.id_carrera', '=',$id_carrera)
 			->where('materias.id', '=',$id_materia)
@@ -382,18 +411,20 @@ class AsistenciaController extends Controller
 			->get();
 		
 		//Si no devuelve registros...
-		if (!$sql0->count()){
-			$result[$i] = ["Presentes", 0];
-            $i++;			
+		if (!$presentes->count()){
+			$myObj->rows[0]->c[0] = new \StdClass();
+			$myObj->rows[0]->c[0]->v = "Presentes";
+			$myObj->rows[0]->c[1] = new \StdClass();
+			$myObj->rows[0]->c[1]->v = 0;	
 		}else{
-			foreach ($sql0 as $key => $value) {
-				$result[$i] = ["Presentes", $value->total];
-				$i++;
-			}	
+			$myObj->rows[0]->c[0] = new \StdClass();			
+			$myObj->rows[0]->c[0]->v = "Presentes";
+			$myObj->rows[0]->c[1] = new \StdClass();
+			$myObj->rows[0]->c[1]->v = $presentes[0]->total;
 		}
 		
 		/*AUSENTES*/
-		$sql1 = Asistente::join('dictados','asistentes.id_dictado','=','dictados.id')
+		$ausentes = Asistente::join('dictados','asistentes.id_dictado','=','dictados.id')
 			->join('materias','dictados.id_materia','=','materias.id')		
 			->where('materias.id_carrera', '=',$id_carrera)
 			->where('materias.id', '=',$id_materia)
@@ -404,19 +435,20 @@ class AsistenciaController extends Controller
 			->groupBy('asistentes.cod_asist')	
 			->get();
 
-		//Si no devuelve registros...
-		if (!$sql1->count()){
-			$result[$i] = ["Ausentes", 0];
-            $i++;			
+		if (!$ausentes->count()){
+			$myObj->rows[1]->c[0] = new \StdClass();
+			$myObj->rows[1]->c[0]->v = "Ausentes";
+			$myObj->rows[1]->c[1] = new \StdClass();
+			$myObj->rows[1]->c[1]->v = 0;	
 		}else{
-			foreach ($sql1 as $key => $value) {
-				$result[$i] = ["Ausentes", $value->total];
-				$i++;
-			}	
+			$myObj->rows[1]->c[0] = new \StdClass();			
+			$myObj->rows[1]->c[0]->v = "Ausentes";
+			$myObj->rows[1]->c[1] = new \StdClass();
+			$myObj->rows[1]->c[1]->v = $ausentes[0]->total;
 		}
 	
 		/*MEDIA FALTA*/
-		$sql2 = Asistente::join('dictados','asistentes.id_dictado','=','dictados.id')
+		$media = Asistente::join('dictados','asistentes.id_dictado','=','dictados.id')
 			->join('materias','dictados.id_materia','=','materias.id')		
 			->where('materias.id_carrera', '=',$id_carrera)
 			->where('materias.id', '=',$id_materia)
@@ -427,19 +459,21 @@ class AsistenciaController extends Controller
 			->groupBy('asistentes.cod_asist')	
 			->get();
 
-		//Si no devuelve registros...
-		if (!$sql2->count()){
-			$result[$i] = ["Media Falta", 0];
-            $i++;			
+		if (!$media->count()){
+			$myObj->rows[2]->c[0] = new \StdClass();			
+			$myObj->rows[2]->c[0]->v = "Media Falta";
+			$myObj->rows[2]->c[1] = new \StdClass();
+			$myObj->rows[2]->c[1]->v = 0;		
 		}else{
-			foreach ($sql2 as $key => $value) {
-				$result[$i] = ["Media Falta", $value->total];
-				$i++;
-			}	
-		}	
-	
+			$myObj->rows[2]->c[0] = new \StdClass();
+			$myObj->rows[2]->c[0]->v = "Media Falta";
+			$myObj->rows[2]->c[1] = new \StdClass();
+			$myObj->rows[2]->c[1]->v = $media[0]->total;
+		}
+
+		$result->inscriptos = $myObj;
 		return	$result;
-    }  
+    }   
 	
 	public function cantInscriptos(Request $request) {
         
