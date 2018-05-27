@@ -55,7 +55,11 @@ class AsistenciaController extends Controller
 				->select('docentes.id AS id_docente')
 				->get(); 
 				
-				return $user;
+				if(count($user==0)){
+					return 500;
+				}else{
+					return $user;
+				}
 			}	
 		}    
 
