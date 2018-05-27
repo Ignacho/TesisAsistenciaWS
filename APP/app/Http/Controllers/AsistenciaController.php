@@ -29,7 +29,7 @@ class AsistenciaController extends Controller
 		$token = curl_exec ($ch);
 		curl_close ($ch);
 		$formattedToken = json_decode($token);
-
+dd($formattedToken);
 		//Error al autenticar credenciales.	
 		if(isset($formattedToken->error)){
 			return 500;
