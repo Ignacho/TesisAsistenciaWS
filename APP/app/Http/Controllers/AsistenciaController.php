@@ -22,9 +22,8 @@ class AsistenciaController extends Controller
         $email = $request->input('email');
         $password = $request->input('password');
 		$ch = curl_init();
-		curl_setopt($ch, CURLOPT_URL,"http://caeceasistencia.com/api/authenticate");
+		curl_setopt($ch, CURLOPT_URL,"http://caeceasistencia.com/api/authenticate?email=".$email."&password=".$password."&is_docente=1");
 		curl_setopt($ch, CURLOPT_POST, 1);
-		curl_setopt($ch, CURLOPT_POSTFIELDS,"email=".$email."&password=".$password."&is_docente=1");
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 		$token = curl_exec ($ch);
 		curl_close ($ch);
